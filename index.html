@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Регулятор веса</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #333; }
+  header { background: #2d6a4f; color: white; padding: 20px 40px; }
+  header h1 { font-size: 1.6rem; }
+  header p { font-size: 0.9rem; opacity: 0.85; margin-top: 4px; }
+  .container { max-width: 860px; margin: 40px auto; padding: 0 20px; }
+  .card { background: white; border-radius: 12px; padding: 32px; margin-bottom: 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  h2 { color: #2d6a4f; margin-bottom: 20px; font-size: 1.2rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 5px; }
+  input, select { width: 100%; padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 1rem; transition: border 0.2s; }
+  input:focus, select:focus { outline: none; border-color: #2d6a4f; }
+  .radio-group { display: flex; gap: 20px; margin-top: 8px; }
+  .radio-group label { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; color: #333; cursor: pointer; }
+  .radio-group input { width: auto; }
+  button { background: #2d6a4f; color: white; border: none; padding: 12px 32px; border-radius: 8px; font-size: 1rem; cursor: pointer; margin-top: 20px; transition: background 0.2s; }
+  button:hover { background: #1b4332; }
+  .result-box { background: #f8fdf9; border: 2px solid #2d6a4f; border-radius: 10px; padding: 20px; margin-top: 16px; display: none; }
+  .bmi-value { font-size: 2.5rem; font-weight: bold; color: #2d6a4f; }
+  .bmi-category { font-size: 1.1rem; margin-top: 4px; font-weight: 600; }
+  .bmi-category.underweight { color: #2196F3; }
+  .bmi-category.normal { color: #4caf50; }
+  .bmi-category.overweight { color: #ff9800; }
+  .bmi-category.obese { color: #f44336; }
+  .info-row { display: flex; gap: 20px; margin-top: 16px; flex-wrap: wrap; }
+  .info-item { flex: 1; min-width: 140px; background: white; border-radius: 8px; padding: 12px 16px; border: 1px solid #e0e0e0; }
+  .info-item .val { font-size: 1.4rem; font-weight: bold; color: #2d6a4f; }
+  .info-item .lbl { font-size: 0.8rem; color: #888; margin-top: 2px; }
+
+  /* AUTH */
+  .auth-section { display: none; }
+  .auth-section.visible { display: block; }
+  .rec-section { display: none; }
+  .rec-section.visible { display: block; }
+  .rec-list { list-style: none; padding: 0; }
+  .rec-list li { padding: 10px 14px; border-left: 4px solid #2d6a4f; background: #f8fdf9; margin-bottom: 8px; border-radius: 0 8px 8px 0; font-size: 0.95rem; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab { padding: 8px 20px; border-radius: 20px; border: 2px solid #2d6a4f; background: white; color: #2d6a4f; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+  .tab.active { background: #2d6a4f; color: white; }
+  .auth-form { max-width: 360px; }
+  .auth-form input { margin-bottom: 12px; }
+  .error-msg { color: #f44336; font-size: 0.85rem; margin-top: 8px; display: none; }
+  .success-msg { color: #2d6a4f; font-size: 0.85rem; margin-top: 8px; display: none; }
+  .logout-btn { background: transparent; border: 2px solid #2d6a4f; color: #2d6a4f; padding: 7px 18px; font-size: 0.85rem; margin-top: 0; }
+  .logout-btn:hover { background: #2d6a4f; color: white; }
+  .user-badge { display: inline-flex; align-items: center; gap: 10px; background: #f0faf4; border: 1px solid #2d6a4f; border-radius: 20px; padding: 6px 16px; margin-bottom: 16px; font-size: 0.9rem; color: #2d6a4f; font-weight: 600; }
+  .scale-note { font-size: 0.8rem; color: #888; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚖️ Регулятор веса и здоровья</h1>
+  <p>Расчёт ИМТ, нормы калорий и персональные рекомендации</p>
+</header>
+
+<div class="container">
+
+  <!-- БЛОК 1: ИМТ (без авторизации) -->
+  <div class="card">
+    <h2>📊 Расчёт индекса массы тела (ИМТ)</h2>
+    <div class="form-grid">
+      <div>
+        <label>Рост (см)</label>
+        <input type="number" id="height" placeholder="например 175" min="100" max="250">
+      </div>
+      <div>
+        <label>Вес (кг)</label>
+        <input type="number" id="weight" placeholder="например 70" min="30" max="300">
+      </div>
+      <div>
+        <label>Возраст</label>
+        <input type="number" id="age" placeholder="например 22" min="10" max="100">
+      </div>
+      <div>
+        <label>Пол</label>
+        <div class="radio-group">
+          <label><input type="radio" name="gender" value="male" checked> Мужской</label>
+          <label><input type="radio" name="gender" value="female"> Женский</label>
+        </div>
+      </div>
+      <div>
+        <label>Телосложение</label>
+        <select id="build">
+          <option value="thin">Тонкое (астеническое)</option>
+          <option value="normal" selected>Среднее (нормостеническое)</option>
+          <option value="wide">Широкое (гиперстеническое)</option>
+        </select>
+      </div>
+      <div>
+        <label>Уровень активности</label>
+        <select id="activity">
+          <option value="1.2">Малоподвижный образ жизни</option>
+          <option value="1.375">Лёгкая активность (1-3 раза/нед)</option>
+          <option value="1.55" selected>Умеренная (3-5 раз/нед)</option>
+          <option value="1.725">Высокая (6-7 раз/нед)</option>
+          <option value="1.9">Очень высокая (спортсмен)</option>
+        </select>
+      </div>
+    </div>
+    <button onclick="calcBMI()">Рассчитать ИМТ</button>
+
+    <div class="result-box" id="bmiResult">
+      <div class="bmi-value" id="bmiNum"></div>
+      <div class="bmi-category" id="bmiCat"></div>
+      <p class="scale-note">⚠️ ИМТ — ориентировочный показатель. Для точной оценки рекомендуется биоимпедансный анализ (специальные весы, пропускающие ток), который учитывает процент жира и мышц.</p>
+      <div class="info-row">
+        <div class="info-item">
+          <div class="val" id="idealWeight"></div>
+          <div class="lbl">Идеальный вес (кг)</div>
+        </div>
+        <div class="info-item">
+          <div class="val" id="bmrVal"></div>
+          <div class="lbl">Базальный метаболизм (ккал)</div>
+        </div>
+        <div class="info-item">
+          <div class="val" id="tdeeVal"></div>
+          <div class="lbl">Суточная норма калорий</div>
+        </div>
+        <div class="info-item">
+          <div class="val" id="diffVal"></div>
+          <div class="lbl">Отклонение от нормы (кг)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- БЛОК 2: АВТОРИЗАЦИЯ -->
+  <div class="card">
+    <h2>🔐 Авторизация для получения рекомендаций</h2>
+
+    <div id="authLoggedIn" style="display:none;">
+      <div class="user-badge" id="userBadge">👤 <span id="userNameDisplay"></span></div>
+      <button class="logout-btn" onclick="logout()">Выйти</button>
+    </div>
+
+    <div id="authForms">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('login')">Войти</div>
+        <div class="tab" onclick="switchTab('register')">Регистрация</div>
+      </div>
+
+      <div id="loginForm" class="auth-form">
+        <label>Имя пользователя</label>
+        <input type="text" id="loginUser" placeholder="Введите имя">
+        <label>Пароль</label>
+        <input type="password" id="loginPass" placeholder="Введите пароль">
+        <button onclick="doLogin()">Войти</button>
+        <div class="error-msg" id="loginError">Неверное имя или пароль</div>
+      </div>
+
+      <div id="registerForm" class="auth-form" style="display:none;">
+        <label>Имя пользователя</label>
+        <input type="text" id="regUser" placeholder="Придумайте имя">
+        <label>Пароль</label>
+        <input type="password" id="regPass" placeholder="Придумайте пароль">
+        <label>Повторите пароль</label>
+        <input type="password" id="regPass2" placeholder="Повторите пароль">
+        <button onclick="doRegister()">Зарегистрироваться</button>
+        <div class="error-msg" id="regError"></div>
+        <div class="success-msg" id="regSuccess">Аккаунт создан! Теперь войдите.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- БЛОК 3: РЕКОМЕНДАЦИИ (только после авторизации и расчёта) -->
+  <div class="card" id="recCard" style="display:none;">
+    <h2>💡 Персональные рекомендации</h2>
+    <div id="recContent"></div>
+  </div>
+
+</div>
+
+<script>
+// ===== ХРАНИЛИЩЕ ПОЛЬЗОВАТЕЛЕЙ =====
+function getUsers() {
+  return JSON.parse(localStorage.getItem('users') || '{}');
+}
+function saveUsers(u) {
+  localStorage.setItem('users', JSON.stringify(u));
+}
+function getCurrentUser() {
+  return localStorage.getItem('currentUser');
+}
+function setCurrentUser(name) {
+  localStorage.setItem('currentUser', name);
+}
+
+// ===== АВТОРИЗАЦИЯ =====
+function switchTab(tab) {
+  document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+  });
+}
+
+function doRegister() {
+  const u = document.getElementById('regUser').value.trim();
+  const p = document.getElementById('regPass').value;
+  const p2 = document.getElementById('regPass2').value;
+  const err = document.getElementById('regError');
+  const ok = document.getElementById('regSuccess');
+  err.style.display = 'none'; ok.style.display = 'none';
+  if (!u || !p) { err.textContent = 'Заполните все поля'; err.style.display = 'block'; return; }
+  if (p !== p2) { err.textContent = 'Пароли не совпадают'; err.style.display = 'block'; return; }
+  const users = getUsers();
+  if (users[u]) { err.textContent = 'Такой пользователь уже есть'; err.style.display = 'block'; return; }
+  users[u] = p;
+  saveUsers(users);
+  ok.style.display = 'block';
+}
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  err.style.display = 'none';
+  const users = getUsers();
+  if (!users[u] || users[u] !== p) { err.style.display = 'block'; return; }
+  setCurrentUser(u);
+  showLoggedIn(u);
+  tryShowRecs();
+}
+
+function logout() {
+  localStorage.removeItem('currentUser');
+  document.getElementById('authLoggedIn').style.display = 'none';
+  document.getElementById('authForms').style.display = 'block';
+  document.getElementById('recCard').style.display = 'none';
+}
+
+function showLoggedIn(name) {
+  document.getElementById('userNameDisplay').textContent = name;
+  document.getElementById('authLoggedIn').style.display = 'block';
+  document.getElementById('authForms').style.display = 'none';
+}
+
+// ===== РАСЧЁТ ИМТ =====
+let lastBMI = null, lastCategory = null, lastWeight = null, lastIdeal = null;
+
+function calcBMI() {
+  const h = parseFloat(document.getElementById('height').value);
+  const w = parseFloat(document.getElementById('weight').value);
+  const a = parseFloat(document.getElementById('age').value);
+  const g = document.querySelector('input[name=gender]:checked').value;
+  const build = document.getElementById('build').value;
+  const act = parseFloat(document.getElementById('activity').value);
+
+  if (!h || !w || !a || h < 100 || w < 30 || a < 10) {
+    alert('Пожалуйста, введите корректные данные (рост, вес, возраст).');
+    return;
+  }
+
+  const bmi = w / ((h / 100) ** 2);
+
+  // Поправка на телосложение
+  const buildOffset = build === 'thin' ? -1 : build === 'wide' ? 1 : 0;
+
+  let category, catClass;
+  const bmiAdj = bmi - buildOffset;
+  if (bmiAdj < 18.5) { category = 'Дефицит массы тела'; catClass = 'underweight'; }
+  else if (bmiAdj < 25) { category = 'Норма'; catClass = 'normal'; }
+  else if (bmiAdj < 30) { category = 'Избыточный вес'; catClass = 'overweight'; }
+  else { category = 'Ожирение'; catClass = 'obese'; }
+
+  // Идеальный вес (формула Devine с поправкой)
+  let ideal;
+  if (g === 'male') ideal = 50 + 0.91 * (h - 152.4);
+  else ideal = 45.5 + 0.91 * (h - 152.4);
+  if (build === 'wide') ideal += 5;
+  if (build === 'thin') ideal -= 3;
+  ideal = Math.max(40, ideal);
+
+  // BMR (Mifflin-St Jeor)
+  let bmr;
+  if (g === 'male') bmr = 10 * w + 6.25 * h - 5 * a + 5;
+  else bmr = 10 * w + 6.25 * h - 5 * a - 161;
+  const tdee = Math.round(bmr * act);
+
+  const diff = +(w - ideal).toFixed(1);
+
+  document.getElementById('bmiNum').textContent = bmi.toFixed(1);
+  const catEl = document.getElementById('bmiCat');
+  catEl.textContent = category;
+  catEl.className = 'bmi-category ' + catClass;
+  document.getElementById('idealWeight').textContent = ideal.toFixed(1);
+  document.getElementById('bmrVal').textContent = Math.round(bmr);
+  document.getElementById('tdeeVal').textContent = tdee;
+  document.getElementById('diffVal').textContent = (diff > 0 ? '+' : '') + diff;
+
+  document.getElementById('bmiResult').style.display = 'block';
+
+  lastBMI = bmi.toFixed(1);
+  lastCategory = catClass;
+  lastWeight = w;
+  lastIdeal = ideal;
+  lastTDEE = tdee;
+  lastDiff = diff;
+
+  tryShowRecs();
+}
+
+// ===== РЕКОМЕНДАЦИИ =====
+function tryShowRecs() {
+  if (!getCurrentUser() || !lastBMI) return;
+
+  const card = document.getElementById('recCard');
+  const content = document.getElementById('recContent');
+  card.style.display = 'block';
+
+  let recs = [];
+  const tdee = lastTDEE;
+
+  if (lastCategory === 'underweight') {
+    recs = [
+      `🍽️ Увеличьте суточное потребление калорий на 300–500 ккал сверх нормы. Ваша норма: <b>${tdee} ккал</b>, цель: <b>${tdee + 400} ккал</b>.`,
+      '🥩 Добавьте в рацион белковые продукты: куриная грудка, яйца, творог, бобовые.',
+      '🏋️ Занимайтесь силовыми тренировками 3 раза в неделю для набора мышечной массы.',
+      '🥜 Ешьте орехи, авокадо, оливковое масло — полезные жиры помогут набрать вес.',
+      '⏰ Питайтесь 5–6 раз в день небольшими порциями, не пропускайте приёмы пищи.',
+      '🩺 При сильном дефиците веса обратитесь к врачу-диетологу для исключения заболеваний.',
+    ];
+  } else if (lastCategory === 'normal') {
+    recs = [
+      `✅ Ваш вес в норме! Поддерживайте суточное потребление калорий: <b>~${tdee} ккал</b>.`,
+      '🥗 Питайтесь сбалансированно: 50% углеводы, 30% белки, 20% жиры.',
+      '🚶 Поддерживайте физическую активность: 30 минут умеренной нагрузки в день.',
+      '💧 Пейте 1.5–2 литра воды в день.',
+      '😴 Соблюдайте режим сна: 7–9 часов для поддержания здорового метаболизма.',
+    ];
+  } else if (lastCategory === 'overweight') {
+    const deficit = tdee - 400;
+    recs = [
+      `🔥 Для снижения веса создайте дефицит калорий: потребляйте <b>${deficit} ккал/день</b> (на 400 меньше нормы).`,
+      `📉 Чтобы сбросить ${lastDiff.toFixed(1)} кг, понадобится примерно ${Math.ceil(lastDiff * 7000 / 400 / 7)} недель при умеренном дефиците.`,
+      '🚴 Добавьте кардионагрузки: бег, велосипед, плавание — 3-4 раза в неделю по 40 мин.',
+      '🍽️ Уменьшите порции, ешьте медленно — мозгу нужно 20 минут, чтобы почувствовать сытость.',
+      '🚫 Исключите быстрые углеводы: сладкое, белый хлеб, газировка.',
+      '📊 Ведите дневник питания — это помогает контролировать реальное потребление калорий.',
+    ];
+  } else {
+    const deficit = tdee - 500;
+    recs = [
+      `⚠️ Рекомендуется медицинская консультация. Для снижения веса: <b>${deficit} ккал/день</b>.`,
+      '🏃 Начните с ходьбы 30–45 минут в день — это безопасная нагрузка при ожирении.',
+      '🥦 Основа рациона: овощи, нежирное мясо, цельнозерновые продукты.',
+      '🚫 Откажитесь от жареного, фастфуда, алкоголя и сладких напитков.',
+      '🩺 Обратитесь к эндокринологу — ожирение может быть связано с гормональными нарушениями.',
+      '🧘 Стресс вызывает переедание — рассмотрите техники релаксации или поддержку психолога.',
+      `📅 Рекомендуемая скорость похудения: 0.5–1 кг в неделю (безопасно для здоровья).`,
+    ];
+  }
+
+  content.innerHTML = '<ul class="rec-list">' + recs.map(r => `<li>${r}</li>`).join('') + '</ul>';
+}
+
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+window.onload = function() {
+  const u = getCurrentUser();
+  if (u) showLoggedIn(u);
+};
+</script>
+</body>
+</html>
